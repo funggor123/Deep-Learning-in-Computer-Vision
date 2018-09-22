@@ -73,6 +73,12 @@ class KNearestNeighbor(object):
         # training point, and store the result in dists[i, j]. You should   #
         # not use a loop over dimension.                                    #
         #####################################################################
+        # First, assign diff = X'-X
+        diff = X[i,:]-self.X_train[j,:]
+        # Then, Use diff to compute diff^2 (Hints: diff*diff is the dot product of diff and diff)
+        # Finally, compute the square root of the dot product
+        # !Remember diff*diff is elementwise multiplication, it is not dot product
+        dists[i,j] = np.sqrt(np.dot(diff,diff))
         pass
         #####################################################################
         #                       END OF YOUR CODE                            #
@@ -95,7 +101,9 @@ class KNearestNeighbor(object):
       # Compute the l2 distance between the ith test point and all training #
       # points, and store the result in dists[i, :].                        #
       #######################################################################
-      
+      # NT*D - (D=>NT*D)
+      diff = X[i,:] - self.X_train
+      dists[i,:] = np.sqrt(np.sum(diff*diff,axis=1))
       pass
       #######################################################################
       #                         END OF YOUR CODE                            #
@@ -124,9 +132,9 @@ class KNearestNeighbor(object):
     # HINT: Try to formulate the l2 distance using matrix multiplication    #
     #       and two broadcast sums.                                         #
     #########################################################################
-    # sqrt((a^2-b^2)+......) = sqrt((a^2-2ab+b^2)+.....) = sqrt(summation(a^2)-2(summation(ab))+summation(b^2))
-    # TES*1 + TES*TRS + 1*TRS 
-    dists = np.sqrt(np.sum(np.power(X,2)).T + 2*np.dot(X.T,self.X_train) + np.sum(np.power(self.X_train,2)))   
+    # Hints: sqrt((a^2-b^2)+......) = sqrt((a^2-2ab+b^2)+.....) = sqrt(summation(a^2)-2(summation(ab))+summation(b^2))
+    # Dimention: TES*1 + TES*TRS + 1*TRS 
+    dists = np.sqrt(np.sum(np.power(X,2),axis=0).T + 2*np.dot(X.T,self.X_train) + np.sum(np.power(self.X_train,2),axis=0))   
     pass
     #########################################################################
     #                         END OF YOUR CODE                              #
