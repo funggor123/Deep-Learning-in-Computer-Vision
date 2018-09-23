@@ -36,11 +36,11 @@ def softmax_loss_naive(W, X, y, reg):
   for i in range(num_data):
       softmax_result = np.zeros(W.shape[1])
       softmax_result = np.exp(np.dot(X[i,:],W))/np.sum(np.exp(np.dot(X[i,:],W)))
-      dW = dW + ((2*reg)*W)/num_data
       dW[:,y[i]] = dW[:,y[i]] + -((1-softmax_result[y[i]])*X[i,:])/num_data
-      loss += -np.log(softmax_result[y[i]])+np.sum(reg*W*W)
+      loss += -np.log(softmax_result[y[i]])
   pass
-  loss = loss / num_data
+  dW = dW + ((2*reg)*W)
+  loss = loss / num_data + np.sum(reg*W*W)
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
@@ -64,6 +64,13 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
+  
+  hidden_unit_outputs = np.dot(X,W)
+  exp_outputs = np.exp(hidden_unit_outputs)
+  softmax_outputs = exp_outputs/np.sum(exp_outputs,axis=1) 
+  cross_entropy_loss = np.choose(y, softmax_outputs.T) 
+  loss = np.sum(cross_entropy_loss) + reg*np.sum(W*W)
+  
   pass
   #############################################################################
   #                          END OF YOUR CODE                                 #
