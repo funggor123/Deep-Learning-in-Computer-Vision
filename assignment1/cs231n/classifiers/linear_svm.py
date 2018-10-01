@@ -65,24 +65,23 @@ def svm_loss_vectorized(W, X, y, reg):
   """
   loss = 0.0
   dW = np.zeros(W.shape) # initialize the gradient as zero
+  num_train = X.shape[0]
 
-  #############################################################################
+ #############################################################################
   # TODO:                                                                     #
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
-  
+  scores = X.dot(W)
+  margin = scores - scores[np.arange(num_train), y].reshape(num_train, 1) + 1
+  margin[np.arange(num_train), y] = 0.0 #这一列不该计算，归零
+  margin = (margin > 0) * margin
+  loss += margin.sum() / num_train
+  loss += 0.5 * reg * np.sum(W * W)
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
-  num_train = X.shape[0]
-  
-  hidden_units_outputs = np.dot(X,W)
-  total_svm_loss = hidden_units_outputs.T - np.choose(y, hidden_units_outputs.T) + 1
-  total_svm_loss[total_svm_loss < 0] = 0 
-  loss = (np.sum(total_svm_loss) - num_train) 
-  loss /= num_train
-  loss += reg * np.sum(W*W)
+
 
   #############################################################################
   # TODO:                                                                     #
@@ -93,6 +92,10 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
+  margin = (margin > 0) * 1
+  row_sum = np.sum(margin, axis=1)                  # 
+  margin[np.arange(num_train), y] = -row_sum
+  dW = X.T.dot(margin)/num_train + reg * W
   
   #############################################################################
   #                             END OF YOUR CODE                              #

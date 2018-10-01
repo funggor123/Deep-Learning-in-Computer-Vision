@@ -32,19 +32,26 @@ def softmax_loss_naive(W, X, y, reg):
   #############################################################################
   # Numpy Array[row,column] , [[..],[..],[..],[..]]
   num_data = X.shape[0]
-  
+  num_class = W.shape[1]
   for i in range(num_data):
-      softmax_result = np.zeros(W.shape[1])
-      softmax_result = np.exp(np.dot(X[i,:],W))/np.sum(np.exp(np.dot(X[i,:],W)))
-      dW[:,y[i]] = dW[:,y[i]] + -((1-softmax_result[y[i]])*X[i,:])/num_data
-      loss += -np.log(softmax_result[y[i]])
+      hidden_out = np.dot(X[i,:],W)
+      hidden_out -=np.max(hidden_out)
+      expo = np.exp(hidden_out)
+      sum_expo = np.sum(np.exp(hidden_out))
+      softmax = expo/sum_expo
+      loss += -np.log(softmax[y[i]]) 
+      # (D,C)
+      for k in range(num_class):
+          dW[:, k] += (softmax[k] - (k == y[i])) * X[i]
   pass
-  dW = dW + ((2*reg)*W)
-  loss = loss / num_data + np.sum(reg*W*W)
+  loss /= num_data 
+  loss += 0.5*reg*np.sum(W*W)
+  
+  dW /= num_data 
+  dW += reg*W
   #############################################################################
   #                          END OF YOUR CODE                                 #
-  #############################################################################
-
+  ############################################################################# 
   return loss, dW
 
 
@@ -57,21 +64,40 @@ def softmax_loss_vectorized(W, X, y, reg):
   # Initialize the loss and gradient to zero.
   loss = 0.0
   dW = np.zeros_like(W)
-
   #############################################################################
   # TODO: Compute the softmax loss and its gradient using no explicit loops.  #
   # Store the loss in loss and the gradient in dW. If you are not careful     #
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
+  # (N*D) * (D*C) -> N*C
+  num_data = X.shape[0]
+  hidden_out = np.dot(X,W)
+  hidden_out -= np.max(hidden_out, axis=1, keepdims=True) # max of every sample
+  # Forward Pass
+  # (N*C) / (N => N*1 => N*C) = N*C
+  # np.choose choose one element from each column
+  # (N*C) => (C*N) -> C
+  # C -> Scalar
+  exp = np.exp(hidden_out)
+  exp_sum = np.sum(exp,axis=1, keepdims=True)
+  softmax = exp/exp_sum
+
+  entropy_loss = -np.log(softmax)
   
-  hidden_unit_outputs = np.dot(X,W)
-  exp_outputs = np.exp(hidden_unit_outputs)
-  softmax_outputs = exp_outputs/np.sum(exp_outputs,axis=1) 
-  cross_entropy_loss = np.choose(y, softmax_outputs.T) 
-  loss = np.sum(cross_entropy_loss) + reg*np.sum(W*W)
+  loss = np.sum(np.choose(y,entropy_loss.T))
+  loss /= num_data
+  loss += 0.5*reg*np.sum(W*W)
   
-  pass
+  # Backward Pass
+  one_hot_Y = np.zeros((y.size, y.max()+1))
+  one_hot_Y[np.arange(y.size),y] = 1
+  
+  # (N*C) - (N => N*C) = (N*C) 
+  # (N*D) => (D*N) * (N*C)  = (D*C)
+  dW += np.dot(X.T,softmax-one_hot_Y)
+  dW /= num_data
+  dW += reg*W
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################

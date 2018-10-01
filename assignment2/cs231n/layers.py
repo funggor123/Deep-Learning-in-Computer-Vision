@@ -25,6 +25,22 @@ def affine_forward(x, w, b):
     # TODO: Implement the affine forward pass. Store the result in out. You   #
     # will need to reshape the input into rows.                               #
     ###########################################################################
+    # D is the number of inputs for each neuron  
+    M = w.shape[0]
+    # N is the number of data 
+    N = x.shape[0]
+    # Reshape the input data matrix (N,d1,d2,d3,d4,...,dk) to (1,D) Dimension 
+    x = x.reshape((N,M))
+    # Perform Matrix Multiplication 
+    # n1*m1 = ynm
+    # (N*D) * (D,M) = (N*M)
+    out = np.dot(x,w)
+    # Numpy Broadcast Rule 
+    # N*M
+    #   M
+    # N*M (Result)
+    # (N*M) + (M,)=>(N*M) = (N*M) 
+    out += b 
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -53,6 +69,9 @@ def affine_backward(dout, cache):
     ###########################################################################
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
+    #
+    
+    
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #

@@ -102,8 +102,7 @@ class KNearestNeighbor(object):
       # points, and store the result in dists[i, :].                        #
       #######################################################################
       # NT*D - (D=>NT*D)
-      diff = X[i,:] - self.X_train
-      dists[i,:] = np.sqrt(np.sum(diff*diff,axis=1))
+      dists[i, :] = np.linalg.norm(X[i, :] - self.X_train[:], axis = 1)
       pass
       #######################################################################
       #                         END OF YOUR CODE                            #
@@ -134,7 +133,8 @@ class KNearestNeighbor(object):
     #########################################################################
     # Hints: sqrt((a^2-b^2)+......) = sqrt((a^2-2ab+b^2)+.....) = sqrt(summation(a^2)-2(summation(ab))+summation(b^2))
     # Dimention: TES*1 + TES*TRS + 1*TRS 
-    dists = np.sqrt(np.sum(np.power(X,2),axis=0).T + 2*np.dot(X.T,self.X_train) + np.sum(np.power(self.X_train,2),axis=0))   
+    dists = np.sqrt((X*X).sum(axis=1, keepdims=1)+(self.X_train*self.X_train).sum(
+            axis=1)-2*X.dot(self.X_train.T))  
     pass
     #########################################################################
     #                         END OF YOUR CODE                              #
