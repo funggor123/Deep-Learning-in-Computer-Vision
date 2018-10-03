@@ -26,11 +26,13 @@ def affine_forward(x, w, b):
     # will need to reshape the input into rows.                               #
     ###########################################################################
     # D is the number of inputs for each neuron  
-    M = w.shape[0]
+    D = w.shape[0]
     # N is the number of data 
     N = x.shape[0]
+    # Store the old shape of x
+    old_shape = x.shape
     # Reshape the input data matrix (N,d1,d2,d3,d4,...,dk) to (1,D) Dimension 
-    x = x.reshape((N,M))
+    x = x.reshape((N,D))
     # Perform Matrix Multiplication 
     # n1*m1 = ynm
     # (N*D) * (D,M) = (N*M)
@@ -41,6 +43,8 @@ def affine_forward(x, w, b):
     # N*M (Result)
     # (N*M) + (M,)=>(N*M) = (N*M) 
     out += b 
+    # Reshape x
+    x = x.reshape(old_shape)
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -69,15 +73,39 @@ def affine_backward(dout, cache):
     ###########################################################################
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
-    #
-    
-    
+    # store the origin shape of x 
+    old_shape = x.shape
+    # N is the Number of Data 
+    N = dout.shape[0]
+    # D is the number of inputs for each neuron  
+    D = w.shape[0]
+    # Reshape the input data matrix (N,d1,d2,d3,d4,...,dk) to (1,D) Dimension
+    x = x.reshape((N,D))
+    # Create the matrix for dw and db
+    dw = np.zeros_like(w)
+    db = np.zeros_like(b)
+    dx = np.zeros_like(x)
+    # For Data i
+    for i in range(N):
+        dout_tmp = dout[i,:]
+        x_tmp = x[i,:]
+        # broadcast the matrix 
+        dout_tmp = np.array([dout_tmp]*x_tmp.shape[0])
+        x_tmp = np.array([x_tmp]*dout_tmp.shape[1]).T
+        # Update the gradient
+        # df/dw = upstream gradient * x 
+        dw += dout_tmp * x_tmp
+        # df/db = upstream gradient
+        db += dout[i,:] 
+        # df/dx = w dot df/dcout
+        dx[i,:] += np.dot(w,dout[i,:])
     pass
+    # Reshape dx
+    dx = dx.reshape(old_shape)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
     return dx, dw, db
-
 
 def relu_forward(x):
     """
@@ -94,6 +122,8 @@ def relu_forward(x):
     ###########################################################################
     # TODO: Implement the ReLU forward pass.                                  #
     ###########################################################################
+    # Relu , y = max(0,x)
+    out = np.maximum(0,x)
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -117,6 +147,12 @@ def relu_backward(dout, cache):
     ###########################################################################
     # TODO: Implement the ReLU backward pass.                                 #
     ###########################################################################
+    # For x < 0 , the gradient is 0
+    x[x<0] = 0
+    # For x > 0 , the gradient is 1
+    x[x>0] = 1
+    # Local Gradient times the upstream gradient
+    dx = x * dout
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #
