@@ -240,6 +240,7 @@ class Solver(object):
 
         # Compute predictions in batches
         num_batches = N // batch_size
+        
         if N % batch_size != 0:
             num_batches += 1
         y_pred = []
@@ -249,8 +250,9 @@ class Solver(object):
             scores = self.model.loss(X[start:end])
             y_pred.append(np.argmax(scores, axis=1))
         y_pred = np.hstack(y_pred)
+        
         acc = np.mean(y_pred == y)
-
+        
         return acc
 
 
@@ -285,6 +287,7 @@ class Solver(object):
             if first_it or last_it or epoch_end:
                 train_acc = self.check_accuracy(self.X_train, self.y_train,
                     num_samples=self.num_train_samples)
+                
                 val_acc = self.check_accuracy(self.X_val, self.y_val,
                     num_samples=self.num_val_samples)
                 self.train_acc_history.append(train_acc)

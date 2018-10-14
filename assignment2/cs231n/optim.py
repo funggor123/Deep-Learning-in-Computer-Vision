@@ -65,6 +65,13 @@ def sgd_momentum(w, dw, config=None):
     # TODO: Implement the momentum update formula. Store the updated value in #
     # the next_w variable. You should also use and update the velocity v.     #
     ###########################################################################
+    # Updated rule 
+    # Momentum is used to decrease the momentmum when it pass the lower point (when the new gradient direction is change)
+    # and speed up the hill down process when the direction have't change , speed up to the lowest point
+    # v = momentum*v - learning_rate*dw
+    # w = w + dw 
+    v = v*config['momentum'] - config['learning_rate']*dw  
+    next_w = w + v 
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #
