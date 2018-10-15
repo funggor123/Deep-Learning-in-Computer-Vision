@@ -99,13 +99,19 @@ def rmsprop(x, dx, config=None):
     config.setdefault('decay_rate', 0.99)
     config.setdefault('epsilon', 1e-8)
     config.setdefault('cache', np.zeros_like(x))
-
+    
     next_x = None
     ###########################################################################
     # TODO: Implement the RMSprop update formula, storing the next value of x #
     # in the next_x variable. Don't forget to update cache value stored in    #
     # config['cache'].                                                        #
-    ###########################################################################
+    ###########################################################################\
+    # Updated rule RMS Prop
+    # Add a regularizer to contraint the learning rate
+    # n = decay_rate*cache+(1-decay_rate)*dx^2
+    # w = w - learning_rate/sqrt(n+epsilon)*dw  
+    config['cache'] = config['decay_rate']*config['cache']+(1-config['decay_rate'])*(dx*dx)
+    next_x = x - config['learning_rate']/np.sqrt(config['cache']+config['epsilon'])*dx
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -143,6 +149,24 @@ def adam(x, dx, config=None):
     # the next_x variable. Don't forget to update the m, v, and t variables   #
     # stored in config.                                                       #
     ###########################################################################
+    # RMS Prop 
+    beta1 = config['beta1']
+    beta2 = config['beta2']
+    v = config['v']
+    m = config['m']
+    eps = config['epsilon']
+    t = config['t']
+    learning_rate = config['learning_rate']
+    
+    m = beta1*m + (1-beta1)*dx
+    mt = m / (1-beta1**t)
+    v = beta2*v + (1-beta2)*(dx**2)
+    vt = v / (1-beta2**t)
+    next_x = x - learning_rate * mt / (np.sqrt(vt) + eps)
+    
+    config['v'] = v
+    config['m'] = m
+    
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #

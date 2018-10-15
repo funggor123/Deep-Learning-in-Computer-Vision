@@ -231,8 +231,11 @@ class FullyConnectedNet(object):
         # pass of the second batch normalization layer, etc.
         self.bn_params = []
         if self.use_batchnorm:
-            self.bn_params = [{'mode': 'train'} for i in range(self.num_layers - 1)]
-
+            self.bn_params = [{'mode': 'train' } for i in range(self.num_layers - 1)]
+            # beta and gamma initlizations 
+            for layer_ind in range(0,len(hidden_dims)):
+                self.params['gamma'+ str(layer_ind+1)] = np.ones(hidden_dims[layer_ind])
+                self.params['beta'+ str(layer_ind+1)] = np.zeros(hidden_dims[layer_ind])
         # Cast all parameters to the correct datatype
         for k, v in self.params.items():
             self.params[k] = v.astype(dtype)
@@ -272,12 +275,20 @@ class FullyConnectedNet(object):
         # Forward Pass
         # First Layer Forward Passing
         cache = {}
-        a, cache['y1'] = affine_forward(X,self.params['W1'],self.params['b1'])
-        h, cache['h1'] = relu_forward(a)
+        t, cache['y1'] = affine_forward(X,self.params['W1'],self.params['b1'])
+        if self.use_batchnorm:
+            t, cache['bn1'] = batchnorm_forward(t,self.params['gamma1'],self.params['beta1'],self.bn_params[0])
+        h, cache['h1'] = relu_forward(t)
+        if self.use_dropout:
+            h , cache['d1'] = dropout_forward(h,self.dropout_param)
         # Middle Layer Forward Passing
         for layer_ind in range(2,self.num_layers):
-            a, cache[ 'y'+ str(layer_ind) ] = affine_forward(h,self.params['W'+ str(layer_ind)],self.params['b'+ str(layer_ind)])
-            h, cache[ 'h'+ str(layer_ind) ] = relu_forward(a)
+            t, cache[ 'y'+ str(layer_ind) ] = affine_forward(h,self.params['W'+ str(layer_ind)],self.params['b'+ str(layer_ind)])
+            if self.use_batchnorm:
+                t, cache['bn'+ str(layer_ind)] = batchnorm_forward(t,self.params['gamma'+ str(layer_ind)],self.params['beta'+ str(layer_ind)],self.bn_params[layer_ind-1])
+            h, cache[ 'h'+ str(layer_ind) ] = relu_forward(t)
+            if self.use_dropout:
+                h , cache['d'+ str(layer_ind)] = dropout_forward(h,self.dropout_param)
         # Last Layer Forward Passing
         scores, cache[ 'y'+ str(self.num_layers) ] = affine_forward(h,self.params['W'+ str(self.num_layers)],self.params['b'+ str(self.num_layers)])              
         pass
@@ -320,7 +331,11 @@ class FullyConnectedNet(object):
         dout, grads['W'+ str(self.num_layers)], grads['b'+ str(self.num_layers)] = affine_backward(dout,cache[ 'y'+ str(self.num_layers)])
         # Middle to first Layer Backward Pass
         for layer_ind in range(self.num_layers-1,0,-1):
+            if self.use_dropout:
+                dout = dropout_backward(dout, cache[ 'd'+ str(layer_ind) ])
             dout = relu_backward(dout, cache[ 'h'+ str(layer_ind) ])
+            if self.use_batchnorm:
+                dout, grads['gamma'+ str(layer_ind)], grads['beta'+ str(layer_ind)] = batchnorm_backward(dout,cache['bn'+str(layer_ind)])
             dout, grads['W'+ str(layer_ind)], grads['b'+ str(layer_ind)] = affine_backward(dout,cache[ 'y'+ str(layer_ind) ])           
         # Regularization Gradient
         for layer_ind in range(1,self.num_layers+1):

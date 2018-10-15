@@ -223,6 +223,25 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # variance, storing your result in the running_mean and running_var   #
         # variables.                                                          #
         #######################################################################
+        # Find out the sample mean
+        sample_mean = np.mean(x,axis=0)
+        # Find out the sample variance
+        sample_var = np.var(x,axis=0)
+        # X - sample_mean / sample variance
+        a = (x - sample_mean) / np.sqrt(sample_var+eps)
+        # Shift and Scale
+        out = gamma*a+beta
+        # Cacaulate the running mean and running variance
+        running_mean = momentum*running_mean + (1-momentum)*sample_mean
+        running_var = momentum*running_var + (1-momentum)*sample_var
+        # Cache for backward pass
+        cache = {}
+        cache['x'] = x
+        cache['a'] = a 
+        cache['gamma'] = gamma
+        cache['sample_mean'] = sample_mean
+        cache['sample_var'] = sample_var
+        cache['eps'] = eps
         pass
         #######################################################################
         #                           END OF YOUR CODE                          #
@@ -234,6 +253,10 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # then scale and shift the normalized data using gamma and beta.      #
         # Store the result in the out variable.                               #
         #######################################################################
+        # X - running_mean / running_variance
+        a = (x - running_mean) / np.sqrt(running_var+eps)
+        # Shift and Scale
+        out = gamma*a+beta
         pass
         #######################################################################
         #                          END OF YOUR CODE                           #
@@ -266,10 +289,22 @@ def batchnorm_backward(dout, cache):
     - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
     """
     dx, dgamma, dbeta = None, None, None
+    m = dout.shape[0]
     ###########################################################################
     # TODO: Implement the backward pass for batch normalization. Store the    #
     # results in the dx, dgamma, and dbeta variables.                         #
     ###########################################################################
+    dgamma = np.sum(dout*cache['a'],axis=0)
+    dbeta = np.sum(dout,axis=0)
+    
+    # Need to revise 
+    dx_hat = dout * cache['gamma'] 
+    dsample_var = np.sum(dx_hat * (cache['x']-cache['sample_mean']) * (-0.5) * (cache['sample_var'] + cache['eps'])**(-1.5), axis=0)
+    dsample_mean = np.sum(dx_hat * (-1/np.sqrt(cache['sample_var'] + cache['eps'])) , axis=0) + dsample_var * ((np.sum(-2*(cache['x']-cache['sample_mean']))) / m)
+
+    dx = dx_hat * (1/np.sqrt(cache['sample_var'] + cache['eps'])) + \
+       dsample_var * (2*(cache['x']-cache['sample_mean'])/m) + \
+       dsample_mean/m
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -339,6 +374,14 @@ def dropout_forward(x, dropout_param):
         # TODO: Implement training phase forward pass for inverted dropout.   #
         # Store the dropout mask in the mask variable.                        #
         #######################################################################
+        # Generate a mask with the numbers between 1 and 0 randomly
+        mask = np.zeros(x.shape)
+        random_gen_prob = np.random.random_sample(x.shape)
+        # If the elements < prob , drop that inputs
+        mask[random_gen_prob>p ] = 1
+        mask[random_gen_prob<=p] = 0
+        # mask multiply input
+        out = x*mask
         pass
         #######################################################################
         #                           END OF YOUR CODE                          #
@@ -347,6 +390,8 @@ def dropout_forward(x, dropout_param):
         #######################################################################
         # TODO: Implement the test phase forward pass for inverted dropout.   #
         #######################################################################
+        # No dropout for the test set 
+        out = x
         pass
         #######################################################################
         #                            END OF YOUR CODE                         #
@@ -374,6 +419,8 @@ def dropout_backward(dout, cache):
         #######################################################################
         # TODO: Implement training phase backward pass for inverted dropout   #
         #######################################################################
+        mask = cache[1]
+        dx = dout*mask
         pass
         #######################################################################
         #                          END OF YOUR CODE                           #
@@ -411,6 +458,38 @@ def conv_forward_naive(x, w, b, conv_param):
     # TODO: Implement the convolutional forward pass.                         #
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    HH = w.shape[2]
+    WW = w.shape[3]
+    H = x.shape[2]
+    W = x.shape[3]
+    C = x.shape[1]
+    F = w.shape[0]
+    N = x.shape[0]
+    H_prime = int(1 + (H+2*pad-HH)/stride)
+    W_prime = int(1 + (W+2*pad-WW)/stride)
+ 
+    out = np.zeros((N,C,H_prime,W_prime))
+    for i in range(N):
+            for c in range(C):
+                padding_x = np.pad(x[i,c,:,:],[(pad,pad),(pad,pad)],mode='constant')
+                print(padding_x)
+                for f in range(F):
+                    mask = w[f,c,:,:]
+                    print(mask)
+                    height_step = 0
+                    for height_ind in range(0,padding_x.shape[0]-HH+1,stride): 
+                        width_step = 0
+                        for width_ind in range(0,padding_x.shape[1]-WW+1,stride):
+                            conv_area = padding_x[height_ind:height_ind+H,width_ind:width_ind+W]
+                            print(conv_area)
+                            print(mask)
+                            out[i,f,height_step,width_step] += np.sum(conv_area*mask)
+                            print(out)
+                            width_step +=1  
+                        height_step +=1
+
     pass
     ###########################################################################
     #                             END OF YOUR CODE                            #
